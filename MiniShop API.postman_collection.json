@@ -1,0 +1,98 @@
+{
+	"info": {
+		"_postman_id": "95d0d31e-4f40-49e2-a7a4-70420256f287",
+		"name": "MiniShop API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "50511153",
+		"_collection_link": "https://damla-kurt-8197183.postman.co/workspace/fcd04d20-fd09-4581-82de-56226ee764a6/collection/50511153-95d0d31e-4f40-49e2-a7a4-70420256f287?action=share&source=collection_link&creator=50511153"
+	},
+	"item": [
+		{
+			"name": "Register",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test@test.com\",\n  \"password\": \"123456\"\n}\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5147/api/Customers",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5147",
+					"path": [
+						"api",
+						"Customers"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Orders",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "Get Products",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5147/api/Products",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5147",
+					"path": [
+						"api",
+						"Products"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Order",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"customerId\": 1,\n  \"items\": [\n    { \"productId\": 2, \"adet\": 1 }\n  ]\n}\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5147/api/Orders/create",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5147",
+					"path": [
+						"api",
+						"Orders",
+						"create"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
