@@ -30,11 +30,10 @@ public class CustomersController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<CustomerDto>>> GetAll()
     {
-        var customers = await _service.GetAllAsync();
-        var dtoList = _mapper.Map<List<CustomerDto>>(customers);
+        // Map işlemi artık servisin içinde yapılıyor
+        var dtoList = await _service.GetAllAsync(); 
         return Ok(dtoList);
     }
-
     // GET: api/Customers/5
     [HttpGet("{id}")]
     public async Task<ActionResult<CustomerDto>> GetById(int id)

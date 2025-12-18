@@ -29,7 +29,7 @@ builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<CategoryService>();
 builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<OrderService>();
-builder.Services.AddScoped<CustomerService>();
+
 builder.Services.AddScoped<IValidator<CustomerRegisterDto>, CustomerRegisterDtoValidator>();
 
 

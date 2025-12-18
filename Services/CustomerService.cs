@@ -10,8 +10,6 @@ public class CustomerService
     private readonly ICustomerRepository _repository;
     private readonly IMapper _mapper;
 
-      private readonly ICustomerRepository _repo;
-
     public CustomerService(ICustomerRepository repository, IMapper mapper)
     {
         _repository = repository;
@@ -25,23 +23,35 @@ public class CustomerService
             throw new Exception("Bu email zaten kayıtlı");
 
         var customer = _mapper.Map<Customer>(dto);
-
+        // Not: Gerçek senaryoda burada şifre hash'lenmelidir.
         await _repository.AddAsync(customer);
 
         return _mapper.Map<CustomerDto>(customer);
     }
-    public CustomerService(ICustomerRepository repo)
+
+    public async Task<List<CustomerDto>> GetAllAsync()
     {
-        _repo = repo;
+        var customers = await _repository.GetAllAsync();
+        return _mapper.Map<List<CustomerDto>>(customers);
     }
 
-    public Task<List<Customer>> GetAllAsync() => _repo.GetAllAsync();
+    public async Task<CustomerDto?> GetByIdAsync(int id)
+    {
+        var customer = await _repository.GetByIdAsync(id);
+        return customer == null ? null : _mapper.Map<CustomerDto>(customer);
+    }
 
-    public Task<Customer?> GetByIdAsync(int id) => _repo.GetByIdAsync(id);
+    public async Task AddAsync(CustomerCreateDto dto)
+    {
+        var entity = _mapper.Map<Customer>(dto);
+        await _repository.AddAsync(entity);
+    }
 
-    public Task AddAsync(Customer c) => _repo.AddAsync(c);
+    public async Task UpdateAsync(CustomerUpdateDto dto)
+    {
+        var entity = _mapper.Map<Customer>(dto);
+        await _repository.UpdateAsync(entity);
+    }
 
-    public Task UpdateAsync(Customer c) => _repo.UpdateAsync(c);
-
-    public Task DeleteAsync(int id) => _repo.DeleteAsync(id);
+    public async Task DeleteAsync(int id) => await _repository.DeleteAsync(id);
 }

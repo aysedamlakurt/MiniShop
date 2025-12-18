@@ -1,3 +1,5 @@
+using AutoMapper;
+using MiniShop.Dtos;
 using MiniShop.Entities;
 using MiniShop.Repositories;
 
@@ -8,24 +10,24 @@ public class OrderService
     private readonly IOrderRepository _orderRepository;
     private readonly ICustomerRepository _customerRepository;
     private readonly IProductRepository _productRepository;
+    private readonly IMapper _mapper;
 
     public OrderService(
         IOrderRepository orderRepository,
         ICustomerRepository customerRepository,
-        IProductRepository productRepository)
+        IProductRepository productRepository,
+        IMapper mapper)
     {
         _orderRepository = orderRepository;
         _customerRepository = customerRepository;
         _productRepository = productRepository;
+        _mapper = mapper;
     }
 
     /// <summary>
-    /// Sipariş oluşturur:
-    /// - Müşteri var mı kontrol eder
-    /// - Her ürün için stok ve varlık kontrolü yapar
-    /// - Stok düşer
-    /// - Order ve OrderItem listesi oluşturur
-    /// - Tek seferde veritabanına kaydeder
+    /// Sipariş oluşturma mantığı:
+    /// - Stok kontrolü ve düşümü tek bir transaction içinde yapılır.
+    /// - Veri dönüşümleri servis katmanında yönetilir.
     /// </summary>
     public async Task<string> CreateOrderAsync(int customerId, List<(int ProductId, int Adet)> items)
     {
@@ -34,37 +36,32 @@ public class OrderService
         if (customer == null)
             return $"Müşteri bulunamadı. Id = {customerId}";
 
-        // 2) Ürün listesi boş mu?
         if (items == null || items.Count == 0)
             return "Sipariş için en az bir ürün seçmelisiniz.";
 
-        // 3) Sipariş nesnesi oluştur
+        // 2) Sipariş nesnesi oluştur
         var order = new Order
         {
             CustomerId = customerId,
-            OrderDate = DateTime.UtcNow,   // PostgreSQL timestamp with time zone için UTC
+            OrderDate = DateTime.UtcNow,
             TotalAmount = 0,
             Items = new List<OrderItem>()
         };
 
-        // 4) Her ürün için kontrol ve OrderItem oluşturma
+        // 3) Ürün kontrolleri ve Stok Düşümü (Bellek üzerinde)
         foreach (var (productId, adet) in items)
         {
             var product = await _productRepository.GetByIdAsync(productId);
             if (product == null)
                 return $"Ürün bulunamadı. ProductId = {productId}";
 
-            if (adet <= 0)
-                return $"Geçersiz adet: {adet} (ProductId = {productId})";
-
             if (product.Stock < adet)
-                return $"Yetersiz stok: {product.Name} (Stok: {product.Stock}, İstenen: {adet})";
+                return $"Yetersiz stok: {product.Name} (Mevcut: {product.Stock})";
 
-            // Stok düş
+            // ÖNEMLİ: Stok düşme işlemini döngü içinde veritabanına yansıtmıyoruz.
+            // Sadece bellek üzerindeki nesneyi güncelliyoruz.
             product.Stock -= adet;
-            await _productRepository.UpdateAsync(product);
 
-            // OrderItem sadece order.Items içine ekleniyor
             var orderItem = new OrderItem
             {
                 ProductId = product.Id,
@@ -72,30 +69,33 @@ public class OrderService
                 Price = product.Price
             };
 
-            // Toplam tutara ekle
             order.TotalAmount += product.Price * adet;
-
-            // Order'ın item listesine ekle
             order.Items.Add(orderItem);
         }
 
-        // 5) Tek seferde Order kaydet -> EF OrderItems'ı da insert eder
+        // 4) Atomik Kayıt
+        // orderRepository.AddAsync metodu SaveChangesAsync içerdiği için 
+        // hem Order/OrderItems eklenir hem de Product stok güncellemeleri tek seferde kaydedilir.
         await _orderRepository.AddAsync(order);
 
-        return $"Sipariş oluşturuldu. OrderId = {order.Id}, Toplam Tutar = {order.TotalAmount}₺";
+        return $"Sipariş başarıyla oluşturuldu. OrderId = {order.Id}, Toplam Tutar = {order.TotalAmount}₺";
     }
 
     /// <summary>
-    /// Tüm siparişleri döner.
-    /// OrdersController GET /api/Orders bunu kullanıyor.
+    /// Tüm siparişleri DTO olarak döner.
     /// </summary>
-    public Task<List<Order>> GetAllAsync()
-        => _orderRepository.GetAllAsync();
+    public async Task<List<OrderResponseDto>> GetAllAsync()
+    {
+        var orders = await _orderRepository.GetAllAsync();
+        return _mapper.Map<List<OrderResponseDto>>(orders);
+    }
 
     /// <summary>
-    /// Id'ye göre sipariş döner.
-    /// OrdersController GET /api/Orders/{id} bunu kullanıyor.
+    /// Spesifik bir siparişi DTO olarak döner.
     /// </summary>
-    public Task<Order?> GetByIdAsync(int id)
-        => _orderRepository.GetByIdAsync(id);
+    public async Task<OrderResponseDto?> GetByIdAsync(int id)
+    {
+        var order = await _orderRepository.GetByIdAsync(id);
+        return order == null ? null : _mapper.Map<OrderResponseDto>(order);
+    }
 }
