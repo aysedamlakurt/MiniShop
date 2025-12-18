@@ -1,74 +1,44 @@
-using Microsoft.AspNetCore.Mvc;
+using AutoMapper;
 using MiniShop.Dtos;
-using MiniShop.Services;
+using MiniShop.Entities;
+using MiniShop.Repositories;
 
-namespace MiniShop.Controllers;
+namespace MiniShop.Services;
 
-[ApiController]
-[Route("api/[controller]")]
-public class CategoriesController : ControllerBase
+public class CategoryService
 {
-    private readonly CategoryService _service;
+    private readonly ICategoryRepository _repo;
+    private readonly IMapper _mapper;
 
-    // IMapper bağımlılığını buradan kaldırdık çünkü servis bu işi üstleniyor
-    public CategoriesController(CategoryService service)
+    public CategoryService(ICategoryRepository repo, IMapper mapper)
     {
-        _service = service;
+        _repo = repo;
+        _mapper = mapper;
     }
 
-    // GET: api/Categories
-    [HttpGet]
-    public async Task<ActionResult<List<CategoryDto>>> GetAll()
+    public async Task<List<CategoryDto>> GetAllAsync()
     {
-        // Servis doğrudan DTO listesi dönüyor
-        var dtoList = await _service.GetAllAsync();
-        return Ok(dtoList);
+        var categories = await _repo.GetAllAsync();
+        return _mapper.Map<List<CategoryDto>>(categories);
     }
 
-    // GET: api/Categories/5
-    [HttpGet("{id}")]
-    public async Task<ActionResult<CategoryDto>> GetById(int id)
+    public async Task<CategoryDto?> GetByIdAsync(int id)
     {
-        var dto = await _service.GetByIdAsync(id);
-        if (dto == null)
-            return NotFound();
-
-        return Ok(dto);
+        var category = await _repo.GetByIdAsync(id);
+        return category == null ? null : _mapper.Map<CategoryDto>(category);
     }
 
-    // POST: api/Categories
-    [HttpPost]
-    public async Task<ActionResult> Create(CategoryCreateDto dto)
+    public async Task AddAsync(CategoryCreateDto dto)
     {
-        // FluentValidation Program.cs'de kayıtlı olduğu için otomatik çalışır
-        await _service.AddAsync(dto);
-        return Ok("Category eklendi");
+        var entity = _mapper.Map<Category>(dto);
+        await _repo.AddAsync(entity);
     }
 
-    // PUT: api/Categories/5
-    [HttpPut("{id}")]
-    public async Task<ActionResult> Update(int id, CategoryUpdateDto dto)
+    public async Task UpdateAsync(CategoryUpdateDto dto)
     {
-        if (id != dto.Id)
-            return BadRequest("Id uyumsuz");
-
-        var existing = await _service.GetByIdAsync(id);
-        if (existing == null)
-            return NotFound();
-
-        await _service.UpdateAsync(dto);
-        return Ok("Category güncellendi");
+        var entity = _mapper.Map<Category>(dto);
+        await _repo.UpdateAsync(entity);
     }
 
-    // DELETE: api/Categories/5
-    [HttpDelete("{id}")]
-    public async Task<ActionResult> Delete(int id)
-    {
-        var existing = await _service.GetByIdAsync(id);
-        if (existing == null)
-            return NotFound();
-
-        await _service.DeleteAsync(id);
-        return Ok("Category silindi");
-    }
+    public async Task DeleteAsync(int id) => await _repo.DeleteAsync(id);
 }

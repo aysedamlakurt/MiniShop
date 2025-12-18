@@ -29,7 +29,6 @@ builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<CategoryService>();
 builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<OrderService>();
-
 builder.Services.AddScoped<IValidator<CustomerRegisterDto>, CustomerRegisterDtoValidator>();
 
 
@@ -37,7 +36,6 @@ builder.Services.AddScoped<IValidator<CustomerRegisterDto>, CustomerRegisterDtoV
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddControllers();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<ProductCreateDtoValidator>();
 
