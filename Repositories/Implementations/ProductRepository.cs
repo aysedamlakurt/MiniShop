@@ -13,12 +13,15 @@ public class ProductRepository : IProductRepository
         _context = context;
     }
 
-    public async Task<List<Product>> GetAllAsync() =>
-        await _context.Products.ToListAsync();
+   public async Task<List<Product>> GetAllAsync() =>
+    await _context.Products
+        .Include(p => p.Category) // Kategori nesnesini yükle
+        .ToListAsync();
 
-    public async Task<Product?> GetByIdAsync(int id) =>
-        await _context.Products.FindAsync(id);
-
+public async Task<Product?> GetByIdAsync(int id) =>
+    await _context.Products
+        .Include(p => p.Category) // Kategori nesnesini yükle
+        .FirstOrDefaultAsync(p => p.Id == id);
     public async Task AddAsync(Product product)
     {
         _context.Products.Add(product);
