@@ -1,86 +1,39 @@
-using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
-using MiniShop.Dtos;
-using MiniShop.Entities;
-using MiniShop.Services;
-
-namespace MiniShop.Controllers;
-
 [ApiController]
 [Route("api/[controller]")]
 public class CategoriesController : ControllerBase
 {
     private readonly CategoryService _service;
-    private readonly IMapper _mapper;
+    public CategoriesController(CategoryService service) => _service = service;
 
-    public CategoriesController(CategoryService service, IMapper mapper)
-    {
-        _service = service;
-        _mapper = mapper;
-    }
-
-    // GET: api/Categories
     [HttpGet]
-    public async Task<ActionResult<List<CategoryDto>>> GetAll()
-    {
-        var categories = await _service.GetAllAsync();
-        var dtoList = _mapper.Map<List<CategoryDto>>(categories);
-        return Ok(dtoList);
-    }
+    public async Task<IActionResult> GetAll() => Ok(await _service.GetAllAsync());
 
-    // GET: api/Categories/5
     [HttpGet("{id}")]
-    public async Task<ActionResult<CategoryDto>> GetById(int id)
+    public async Task<IActionResult> GetById(int id)
     {
-        var category = await _service.GetByIdAsync(id);
-        if (category == null)
-            return NotFound();
-
-        var dto = _mapper.Map<CategoryDto>(category);
-        return Ok(dto);
+        var result = await _service.GetByIdAsync(id);
+        return result == null ? NotFound() : Ok(result);
     }
 
-    // POST: api/Categories
     [HttpPost]
-    public async Task<ActionResult> Create(CategoryCreateDto dto)
+    public async Task<IActionResult> Create(CategoryCreateDto dto)
     {
-        if (!ModelState.IsValid)
-            return ValidationProblem(ModelState);
-
-        var entity = _mapper.Map<Category>(dto);
-        await _service.AddAsync(entity);
-        return Ok("Category eklendi");
+        await _service.AddAsync(dto);
+        return Ok("Kategori eklendi.");
     }
 
-    // PUT: api/Categories/5
     [HttpPut("{id}")]
-    public async Task<ActionResult> Update(int id, CategoryUpdateDto dto)
+    public async Task<IActionResult> Update(int id, CategoryUpdateDto dto)
     {
-        if (id != dto.Id)
-            return BadRequest("Id uyumsuz");
-
-        if (!ModelState.IsValid)
-            return ValidationProblem(ModelState);
-
-        var existing = await _service.GetByIdAsync(id);
-        if (existing == null)
-            return NotFound();
-
-        var entity = _mapper.Map<Category>(dto);
-        await _service.UpdateAsync(entity);
-
-        return Ok("Category güncellendi");
+        if (id != dto.Id) return BadRequest("ID uyuşmazlığı.");
+        await _service.UpdateAsync(dto);
+        return Ok("Kategori güncellendi.");
     }
 
-    // DELETE: api/Categories/5
     [HttpDelete("{id}")]
-    public async Task<ActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(int id)
     {
-        var existing = await _service.GetByIdAsync(id);
-        if (existing == null)
-            return NotFound();
-
         await _service.DeleteAsync(id);
-        return Ok("Category silindi");
+        return Ok("Kategori silindi.");
     }
 }

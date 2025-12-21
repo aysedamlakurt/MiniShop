@@ -1,10 +1,3 @@
-using AutoMapper;
-using MiniShop.Dtos;
-using MiniShop.Entities;
-using MiniShop.Repositories;
-
-namespace MiniShop.Services;
-
 public class CustomerService
 {
     private readonly ICustomerRepository _repository;
@@ -19,13 +12,10 @@ public class CustomerService
     public async Task<CustomerDto> RegisterAsync(CustomerRegisterDto dto)
     {
         var existing = await _repository.GetByEmailAsync(dto.Email);
-        if (existing != null)
-            throw new Exception("Bu email zaten kayıtlı");
+        if (existing != null) throw new Exception("Bu email zaten kayıtlı.");
 
         var customer = _mapper.Map<Customer>(dto);
-        // Not: Gerçek senaryoda burada şifre hash'lenmelidir.
         await _repository.AddAsync(customer);
-
         return _mapper.Map<CustomerDto>(customer);
     }
 
@@ -41,16 +31,13 @@ public class CustomerService
         return customer == null ? null : _mapper.Map<CustomerDto>(customer);
     }
 
-    public async Task AddAsync(CustomerCreateDto dto)
-    {
-        var entity = _mapper.Map<Customer>(dto);
-        await _repository.AddAsync(entity);
-    }
-
     public async Task UpdateAsync(CustomerUpdateDto dto)
     {
-        var entity = _mapper.Map<Customer>(dto);
-        await _repository.UpdateAsync(entity);
+        var existing = await _repository.GetByIdAsync(dto.Id);
+        if (existing == null) throw new KeyNotFoundException("Müşteri bulunamadı.");
+
+        _mapper.Map(dto, existing);
+        await _repository.UpdateAsync(existing);
     }
 
     public async Task DeleteAsync(int id) => await _repository.DeleteAsync(id);

@@ -1,10 +1,3 @@
-using AutoMapper;
-using MiniShop.Dtos;
-using MiniShop.Entities;
-using MiniShop.Repositories;
-
-namespace MiniShop.Services;
-
 public class CategoryService
 {
     private readonly ICategoryRepository _repo;
@@ -36,8 +29,11 @@ public class CategoryService
 
     public async Task UpdateAsync(CategoryUpdateDto dto)
     {
-        var entity = _mapper.Map<Category>(dto);
-        await _repo.UpdateAsync(entity);
+        var existing = await _repo.GetByIdAsync(dto.Id);
+        if (existing == null) throw new KeyNotFoundException("Kategori bulunamadı.");
+
+        _mapper.Map(dto, existing); // Güvenli güncelleme
+        await _repo.UpdateAsync(existing);
     }
 
     public async Task DeleteAsync(int id) => await _repo.DeleteAsync(id);
