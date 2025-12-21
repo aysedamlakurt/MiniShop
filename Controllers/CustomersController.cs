@@ -1,3 +1,8 @@
+using Microsoft.AspNetCore.Mvc;
+using MiniShop.Dtos;
+using MiniShop.Services;
+
+namespace MiniShop.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 public class CustomersController : ControllerBase

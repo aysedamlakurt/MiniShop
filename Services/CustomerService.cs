@@ -1,3 +1,10 @@
+using MiniShop.Dtos;
+using MiniShop.Repositories;
+using AutoMapper;
+using MiniShop.Entities;
+
+namespace MiniShop.Services;
+
 public class CustomerService
 {
     private readonly ICustomerRepository _repository;

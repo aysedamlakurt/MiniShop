@@ -1,3 +1,8 @@
+using MiniShop.Dtos;
+using MiniShop.Repositories;
+using AutoMapper;
+using MiniShop.Entities;
+namespace MiniShop.Services;
 public class ProductService
 {
     private readonly IProductRepository _repo;

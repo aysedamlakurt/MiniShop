@@ -1,3 +1,9 @@
+using MiniShop.Dtos;
+using MiniShop.Repositories;
+using AutoMapper;
+using MiniShop.Entities;
+
+namespace MiniShop.Services;
 public class OrderService
 {
     private readonly IOrderRepository _orderRepository;

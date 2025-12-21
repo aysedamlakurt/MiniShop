@@ -1,3 +1,9 @@
+using MiniShop.Dtos;
+using MiniShop.Repositories;
+using AutoMapper;
+using MiniShop.Entities;
+
+namespace MiniShop.Services;
 public class CategoryService
 {
     private readonly ICategoryRepository _repo;
