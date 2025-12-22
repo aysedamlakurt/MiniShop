@@ -22,8 +22,7 @@ public class MappingProfile : Profile
         CreateMap<ProductUpdateDto, Product>();
 
         // --- CUSTOMER ---
-        CreateMap<Customer, CustomerDto>()
-            .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()); // DTO'da PasswordHash yok
+        CreateMap<Customer, CustomerDto>();
 
         CreateMap<CustomerCreateDto, Customer>()
             .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()); // Service'de hashlenecek
