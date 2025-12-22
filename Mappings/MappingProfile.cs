@@ -22,7 +22,17 @@ public class MappingProfile : Profile
         CreateMap<ProductUpdateDto, Product>();
 
         // --- CUSTOMER ---
-        CreateMap<Customer, CustomerDto>().ReverseMap();
+        CreateMap<Customer, CustomerDto>()
+            .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()); // DTO'da PasswordHash yok
+
+        CreateMap<CustomerCreateDto, Customer>()
+            .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()); // Service'de hashlenecek
+    
+        CreateMap<CustomerRegisterDto, Customer>()
+            .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()); // Service'de hashlenecek
+    
+        CreateMap<CustomerUpdateDto, Customer>()
+            .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()); 
         
         // Kayıt ve Oluşturma işlemlerinde Password -> PasswordHash eşlemesi
         CreateMap<CustomerCreateDto, Customer>()
