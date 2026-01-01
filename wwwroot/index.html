@@ -2,305 +2,456 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>MiniShop - Mini E-Ticaret</title>
-    <!-- Bootstrap CSS -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    >
+    <title>MiniShop - Full Debug Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body {
-            background-color: #f5f5f5;
-        }
-        .product-card {
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-            cursor: pointer;
-        }
-        .product-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        .category-badge {
-            cursor: pointer;
-        }
-        .cart-item {
-            border-bottom: 1px solid #eee;
-            padding: 8px 0;
-        }
+        body { background-color: #f8f9fa; }
+        .tab-content { padding: 20px; background: white; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 5px 5px; }
+        .product-card { transition: 0.2s; border: 1px solid #eee; }
+        .product-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .btn-delete { color: crimson; cursor: pointer; }
     </style>
 </head>
 <body>
+
 <div class="container py-4">
-    <h1 class="mb-4 text-center">MiniShop - Mini E-Ticaret</h1>
-    <!-- REGISTER -->
-<div class="card mb-4">
-    <div class="card-header">Müşteri Kayıt</div>
-    <div class="card-body row g-3">
-        <div class="col-md-4">
-            <label>Ad Soyad</label>
-            <input id="regName" class="form-control">
-        </div>
-        <div class="col-md-4">
-            <label>Email</label>
-            <input id="regEmail" class="form-control">
-        </div>
-        <div class="col-md-4">
-            <label>Şifre</label>
-            <input id="regPassword" type="password" class="form-control">
-        </div>
-        <div class="col-12">
-            <button id="registerBtn" class="btn btn-primary">Kayıt Ol</button>
-            <span id="registerMsg" class="ms-3"></span>
-        </div>
-    </div>
-</div>
+    <h2 class="text-center mb-4">🛒 MiniShop - Debug & Kontrol Paneli</h2>
 
-    <!-- Üst kısım: Müşteri ID + Sipariş -->
-    <div class="card mb-4">
-        <div class="card-body d-flex gap-3 align-items-end">
-            <div>
-                <label>Müşteri ID</label>
-                <input id="customerIdInput" class="form-control">
-            </div>
-            <button id="orderBtn" class="btn btn-success">Sipariş Ver</button>
-            <span id="orderMsg"></span>
-        </div>
+    <div id="userStatus" class="alert alert-warning d-flex justify-content-between align-items-center">
+        <span>Giriş yapılmadı. (Sipariş için giriş yapmalısın)</span>
+        <button id="logoutBtn" class="btn btn-sm btn-outline-danger d-none" onclick="logout()">Çıkış</button>
     </div>
 
-    <div class="row">
-        <!-- CATEGORIES -->
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-header">Kategoriler</div>
-                <div class="card-body" id="categories"></div>
-            </div>
-        </div>
-    
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#shop-tab">🛍️ Alışveriş</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-tab">👤 Profil / Giriş</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#admin-tab">🔧 Yönetim (Admin)</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#orders-tab">📦 Siparişler</button></li>
+    </ul>
 
-        <!-- Ürünler -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    Ürünler
-                    <span id="selectedCategory" class="badge bg-secondary">Tümü</span>
+    <div class="tab-content" id="myTabContent">
+        
+        <div class="tab-pane fade show active" id="shop-tab">
+            <div class="row">
+                <div class="col-md-3">
+                    <h5>Kategoriler</h5>
+                    <div class="list-group" id="categoryFilterList">
+                        </div>
                 </div>
-                <div class="card-body row g-3" id="products"></div>
-            </div>
-        </div>
-        <!-- Sepet -->
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-header">Sepet</div>
-                <div class="card-body">
-                    <div id="cart">Sepet boş</div>
-                    <hr>
-                    <strong>Toplam: <span id="total">0 ₺</span></strong>
-                </div>
-            </div>
-        </div>
-    </div>
-
-<!-- Bootstrap JS (opsiyonel ama güzel) -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-<script>
-    const API = "http://localhost:5147";
-
-    let categories = [];
-    let products = [];
-    let cart = [];
-    let selectedCategoryId = null;
-
-    async function api(url, options = {}) {
-    const res = await fetch(url, {
-        headers: { "Content-Type": "application/json" },
-        ...options
-    });
-
-    const text = await res.text();
-    let data = null;
-
-    try {
-        data = text ? JSON.parse(text) : null;
-    } catch {
-        data = text;
-    }
-
-    if (!res.ok) {
-        throw data;
-    }
-
-    return data;
-}
-
-    /* ================= REGISTER ================= */
-
-    document.getElementById("registerBtn").onclick = async () => {
-    const msg = document.getElementById("registerMsg");
-    msg.textContent = "";
-
-    const body = {
-        name: regName.value.trim(),
-        email: regEmail.value.trim(),
-        password: regPassword.value
-    };
-
-    try {
-        const data = await api(`${API}/api/Customers/register`, {
-            method: "POST",
-            body: JSON.stringify(body)
-        });
-
-        customerIdInput.value = data.id;
-        msg.textContent = "Kayıt başarılı 🎉";
-        msg.className = "text-success";
-    }
-    catch (err) {
-        console.log("REGISTER ERROR:", err);
-
-        if (err?.errors?.Password) {
-            msg.textContent = err.errors.Password[0];
-        }
-        else if (err?.errors?.Email) {
-            msg.textContent = err.errors.Email[0];
-        }
-        else {
-            msg.textContent = "Kayıt sırasında hata oluştu";
-        }
-
-        msg.className = "text-danger";
-    }
-};
-
-
-    /* ================= LOAD DATA ================= */
-
-    async function loadCategories() {
-        categories = await api(`${API}/api/Categories`);
-        renderCategories();
-    }
-
-    async function loadProducts() {
-        products = await api(`${API}/api/Products`);
-        renderProducts();
-    }
-
-    function renderCategories() {
-        const container = document.getElementById("categories");
-        container.innerHTML = "";
-
-        const allBtn = document.createElement("span");
-        allBtn.className = "badge bg-secondary category-badge";
-        allBtn.textContent = "Tümü";
-        allBtn.onclick = () => selectCategory(null);
-        container.appendChild(allBtn);
-
-        categories.forEach(c => {
-            const span = document.createElement("span");
-            span.className = "badge bg-primary category-badge";
-            span.textContent = c.name;
-            span.onclick = () => selectCategory(c.id);
-            container.appendChild(span);
-        });
-    }
-
-    function selectCategory(id) {
-        selectedCategoryId = id;
-        renderProducts();
-    }
-
-    /* ================= PRODUCTS ================= */
-
-    function renderProducts() {
-        const div = document.getElementById("products");
-        div.innerHTML = "";
-
-        const list = selectedCategoryId
-            ? products.filter(p => p.categoryId === selectedCategoryId)
-            : products;
-
-        list.forEach(p => {
-            div.innerHTML += `
                 <div class="col-md-6">
-                    <div class="card product-card">
+                    <h5>Ürünler</h5>
+                    <div class="row g-2" id="productsList">
+                        </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">Sepetim</div>
                         <div class="card-body">
-                            <h5>${p.name}</h5>
-                            <p>${p.description}</p>
-                            <strong>${p.price} ₺</strong>
-                            <p>Stok: ${p.stock}</p>
-                            <button class="btn btn-sm btn-outline-primary"
-                                onclick="addToCart(${p.id})">
-                                Sepete Ekle
-                            </button>
+                            <ul id="cartList" class="list-unstyled">
+                                <li>Sepet boş</li>
+                            </ul>
+                            <hr>
+                            <strong>Toplam: <span id="cartTotal">0</span> ₺</strong>
+                            <button class="btn btn-primary w-100 mt-3" onclick="createOrder()">Sipariş Ver</button>
+                            <small id="orderResult" class="d-block mt-2"></small>
                         </div>
                     </div>
                 </div>
-            `;
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="profile-tab">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card p-3">
+                        <h5>Giriş Yap (Login)</h5>
+                        <input id="loginEmail" type="text" placeholder="Email" class="form-control mb-2" value="test@test.com">
+                        <input id="loginPass" type="password" placeholder="Şifre" class="form-control mb-2" value="123456">
+                        <button class="btn btn-primary w-100" onclick="login()">Giriş</button>
+                        <div id="loginMsg" class="mt-2 text-danger"></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-3">
+                        <h5>Kayıt Ol (Register)</h5>
+                        <input id="regName" type="text" placeholder="Ad Soyad" class="form-control mb-2">
+                        <input id="regEmail" type="text" placeholder="Email" class="form-control mb-2">
+                        <input id="regPass" type="password" placeholder="Şifre" class="form-control mb-2">
+                        <button class="btn btn-success w-100" onclick="register()">Kayıt Ol</button>
+                        <div id="regMsg" class="mt-2"></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-3">
+                        <h5>Şifre Değiştir</h5>
+                        <input id="chOldPass" type="password" placeholder="Eski Şifre" class="form-control mb-2">
+                        <input id="chNewPass" type="password" placeholder="Yeni Şifre" class="form-control mb-2">
+                        <button class="btn btn-warning w-100" onclick="changePassword()">Değiştir</button>
+                        <div id="chMsg" class="mt-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="admin-tab">
+            <div class="row">
+                <div class="col-md-5">
+                    <div class="card p-3 mb-3">
+                        <h6>Kategori Ekle</h6>
+                        <div class="input-group">
+                            <input id="newCatName" type="text" class="form-control" placeholder="Kategori Adı">
+                            <button class="btn btn-primary" onclick="addCategory()">Ekle</button>
+                        </div>
+                    </div>
+                    <h6>Kategori Listesi & Sil</h6>
+                    <ul class="list-group" id="adminCatList"></ul>
+                </div>
+
+                <div class="col-md-7">
+                    <div class="card p-3 mb-3">
+                        <h6>Ürün Ekle</h6>
+                        <div class="row g-2">
+                            <div class="col-6"><input id="newProdName" class="form-control" placeholder="Ürün Adı"></div>
+                            <div class="col-6"><input id="newProdPrice" class="form-control" placeholder="Fiyat (Sayı)"></div>
+                            <div class="col-12"><input id="newProdDesc" class="form-control" placeholder="Açıklama"></div>
+                            <div class="col-6"><input id="newProdStock" class="form-control" placeholder="Stok"></div>
+                            <div class="col-6">
+                                <select id="newProdCatId" class="form-select"></select>
+                            </div>
+                            <div class="col-12"><button class="btn btn-primary w-100" onclick="addProduct()">Ürün Ekle</button></div>
+                        </div>
+                    </div>
+                    <h6>Ürün Listesi & Sil</h6>
+                    <table class="table table-sm table-bordered">
+                        <thead><tr><th>ID</th><th>Ad</th><th>Stok</th><th>İşlem</th></tr></thead>
+                        <tbody id="adminProdList"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="orders-tab">
+            <button class="btn btn-secondary mb-3" onclick="loadOrders()">Listeyi Yenile</button>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Sipariş No</th>
+                            <th>Müşteri</th>
+                            <th>Tarih</th>
+                            <th>Tutar</th>
+                            <th>İçerik</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTableBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const API = "http://localhost:5147/api";
+    
+    // Uygulama Durumu (State)
+    let currentUser = null; // { id, name, email }
+    let products = [];
+    let categories = [];
+    let cart = [];
+
+    // ================= YARDIMCI METOD =================
+    async function req(endpoint, method = "GET", body = null) {
+        const options = { method, headers: { "Content-Type": "application/json" } };
+        if (body) options.body = JSON.stringify(body);
+        
+        try {
+            const res = await fetch(`${API}/${endpoint}`, options);
+            if (!res.ok) {
+                const err = await res.json();
+                throw err.error || err.message || JSON.stringify(err);
+            }
+            // Yanıt boş olabilir (Delete vs)
+            const text = await res.text();
+            return text ? JSON.parse(text) : {};
+        } catch (e) {
+            console.error("API Error:", e);
+            throw e;
+        }
+    }
+
+    // ================= BAŞLANGIÇ =================
+    init();
+    async function init() {
+        await loadCategories();
+        await loadProducts();
+        checkLoginStatus();
+    }
+
+    function checkLoginStatus() {
+        const el = document.getElementById("userStatus");
+        const btn = document.getElementById("logoutBtn");
+        if (currentUser) {
+            el.className = "alert alert-success d-flex justify-content-between align-items-center";
+            el.innerHTML = `<span>Hoşgeldin, <b>${currentUser.name}</b> (ID: ${currentUser.id})</span>`;
+            el.appendChild(btn);
+            btn.classList.remove("d-none");
+        } else {
+            el.className = "alert alert-warning d-flex justify-content-between align-items-center";
+            el.innerHTML = `<span>Giriş yapılmadı. (Sipariş için Profil sekmesinden giriş yapın)</span>`;
+        }
+    }
+
+    function logout() {
+        currentUser = null;
+        cart = [];
+        renderCart();
+        checkLoginStatus();
+    }
+
+    // ================= VERİ YÜKLEME =================
+    async function loadCategories() {
+        categories = await req("Categories");
+        
+        // 1. Alışveriş Filtresi
+        const filterList = document.getElementById("categoryFilterList");
+        filterList.innerHTML = `<a href="#" class="list-group-item list-group-item-action active" onclick="filterProducts(null, this)">Tümü</a>`;
+        
+        // 2. Admin Listesi
+        const adminList = document.getElementById("adminCatList");
+        adminList.innerHTML = "";
+
+        // 3. Ürün Ekleme Select
+        const select = document.getElementById("newProdCatId");
+        select.innerHTML = `<option value="">Kategori Seç...</option>`;
+
+        categories.forEach(c => {
+            // Filtre
+            filterList.innerHTML += `<a href="#" class="list-group-item list-group-item-action" onclick="filterProducts(${c.id}, this)">${c.name}</a>`;
+            
+            // Admin Liste
+            adminList.innerHTML += `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    ${c.name} (ID: ${c.id})
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteCategory(${c.id})">Sil</button>
+                </li>`;
+            
+            // Select
+            select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
         });
     }
 
-    /* ================= CART ================= */
+    async function loadProducts() {
+        products = await req("Products");
+        renderProducts(products);
+        renderAdminProducts(products);
+    }
 
-    function addToCart(id) {
-        const product = products.find(p => p.id === id);
-        const existing = cart.find(c => c.product.id === id);
+    function renderProducts(list) {
+        const container = document.getElementById("productsList");
+        container.innerHTML = "";
+        list.forEach(p => {
+            container.innerHTML += `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card product-card h-100 p-2">
+                        <h6>${p.name}</h6>
+                        <small class="text-muted">${p.categoryName || '-'}</small>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span class="fw-bold">${p.price} ₺</span>
+                            <button class="btn btn-sm btn-primary" onclick="addToCart(${p.id})">+</button>
+                        </div>
+                        <small>Stok: ${p.stock}</small>
+                    </div>
+                </div>`;
+        });
+    }
 
-        if (existing) {
-            existing.adet++;
+    function renderAdminProducts(list) {
+        const tbody = document.getElementById("adminProdList");
+        tbody.innerHTML = "";
+        list.forEach(p => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${p.id}</td>
+                    <td>${p.name}</td>
+                    <td>${p.stock}</td>
+                    <td><button class="btn btn-sm btn-danger" onclick="deleteProduct(${p.id})">X</button></td>
+                </tr>`;
+        });
+    }
+
+    function filterProducts(catId, el) {
+        // UI Aktif Sınıfı
+        document.querySelectorAll("#categoryFilterList a").forEach(a => a.classList.remove("active"));
+        el.classList.add("active");
+
+        if (!catId) {
+            renderProducts(products);
         } else {
-            cart.push({ product, adet: 1 });
+            renderProducts(products.filter(p => p.categoryId === catId));
         }
+    }
 
+    // ================= AUTH (AUTH CONTROLLER) =================
+    async function login() {
+        const email = document.getElementById("loginEmail").value;
+        const pass = document.getElementById("loginPass").value;
+        const msg = document.getElementById("loginMsg");
+        
+        try {
+            const res = await req("Auth/login", "POST", { email, password: pass });
+            currentUser = res.customer; // Backend 'customer' objesi dönüyor
+            msg.textContent = "";
+            checkLoginStatus();
+            alert("Giriş Başarılı!");
+        } catch (err) {
+            msg.textContent = err;
+        }
+    }
+
+    async function register() {
+        const body = {
+            name: document.getElementById("regName").value,
+            email: document.getElementById("regEmail").value,
+            password: document.getElementById("regPass").value
+        };
+        const msg = document.getElementById("regMsg");
+        try {
+            const res = await req("Auth/register", "POST", body); // AuthController
+            msg.className = "text-success";
+            msg.textContent = "Kayıt başarılı! Şimdi giriş yapabilirsin.";
+        } catch (err) {
+            msg.className = "text-danger";
+            msg.textContent = JSON.stringify(err);
+        }
+    }
+
+    async function changePassword() {
+        if (!currentUser) return alert("Önce giriş yapmalısın!");
+        const body = {
+            customerId: currentUser.id,
+            oldPassword: document.getElementById("chOldPass").value,
+            newPassword: document.getElementById("chNewPass").value,
+            newPasswordConfirm: document.getElementById("chNewPass").value // Basitlik için
+        };
+        try {
+            await req("Auth/change-password", "POST", body);
+            document.getElementById("chMsg").className = "text-success";
+            document.getElementById("chMsg").textContent = "Şifre değişti.";
+        } catch (err) {
+            document.getElementById("chMsg").className = "text-danger";
+            document.getElementById("chMsg").textContent = JSON.stringify(err);
+        }
+    }
+
+    // ================= SEPET & SİPARİŞ =================
+    function addToCart(id) {
+        const prod = products.find(p => p.id === id);
+        const item = cart.find(c => c.product.id === id);
+        if (item) item.adet++;
+        else cart.push({ product: prod, adet: 1 });
         renderCart();
     }
 
     function renderCart() {
-        const div = document.getElementById("cart");
-        div.innerHTML = "";
+        const ul = document.getElementById("cartList");
+        const totalSpan = document.getElementById("cartTotal");
+        ul.innerHTML = "";
         let total = 0;
 
         cart.forEach(c => {
             total += c.product.price * c.adet;
-            div.innerHTML += `
-                <div class="cart-item">
-                    ${c.product.name} (${c.adet})
-                </div>
-            `;
+            ul.innerHTML += `<li>${c.product.name} x ${c.adet}</li>`;
         });
 
-        if (cart.length === 0) {
-            div.textContent = "Sepet boş";
-        }
-
-        document.getElementById("total").textContent = total + " ₺";
+        if (cart.length === 0) ul.innerHTML = "<li>Sepet boş</li>";
+        totalSpan.textContent = total;
     }
 
-    /* ================= ORDER ================= */
+    async function createOrder() {
+        if (!currentUser) return alert("Lütfen önce Profil sekmesinden giriş yapın!");
+        if (cart.length === 0) return alert("Sepet boş!");
 
-    document.getElementById("orderBtn").onclick = async () => {
         const body = {
-            customerId: parseInt(document.getElementById("customerIdInput").value),
-            items: cart.map(c => ({
-                productId: c.product.id,
-                adet: c.adet
-            }))
+            customerId: currentUser.id,
+            items: cart.map(c => ({ productId: c.product.id, adet: c.adet }))
         };
 
-        await api(`${API}/api/Orders/create`, {
-            method: "POST",
-            body: JSON.stringify(body)
-        });
+        const msg = document.getElementById("orderResult");
+        try {
+            const res = await req("Orders/create", "POST", body);
+            msg.className = "text-success";
+            msg.textContent = typeof res === 'string' ? res : res.message || "Sipariş alındı!";
+            cart = [];
+            renderCart();
+            loadProducts(); // Stoklar düştüğü için yenile
+        } catch (err) {
+            msg.className = "text-danger";
+            msg.textContent = "Hata: " + JSON.stringify(err);
+        }
+    }
 
-        document.getElementById("orderMsg").textContent = "Sipariş oluşturuldu";
-        document.getElementById("orderMsg").className = "text-success";
+    // ================= SİPARİŞLERİ LİSTELE =================
+    async function loadOrders() {
+        try {
+            const orders = await req("Orders");
+            const tbody = document.getElementById("ordersTableBody");
+            tbody.innerHTML = "";
+            orders.forEach(o => {
+                const itemsHtml = o.items.map(i => `${i.productName} (${i.adet})`).join(", ");
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${o.id}</td>
+                        <td>${o.customerName}</td>
+                        <td>${new Date(o.orderDate).toLocaleString()}</td>
+                        <td>${o.totalAmount} ₺</td>
+                        <td><small>${itemsHtml}</small></td>
+                    </tr>`;
+            });
+        } catch (err) {
+            alert("Siparişler çekilemedi: " + err);
+        }
+    }
 
-        cart = [];
-        renderCart();
-        loadProducts();
-    };
+    // ================= ADMIN (EKLE / SİL) =================
+    async function addCategory() {
+        const name = document.getElementById("newCatName").value;
+        try {
+            await req("Categories", "POST", { name });
+            document.getElementById("newCatName").value = "";
+            loadCategories();
+        } catch(e) { alert(e); }
+    }
 
-    /* ================= INIT ================= */
+    async function deleteCategory(id) {
+        if(!confirm("Emin misin?")) return;
+        try { await req(`Categories/${id}`, "DELETE"); loadCategories(); }
+        catch(e) { alert(e); }
+    }
 
-    loadCategories();
-    loadProducts();
+    async function addProduct() {
+        const body = {
+            name: document.getElementById("newProdName").value,
+            price: parseFloat(document.getElementById("newProdPrice").value),
+            description: document.getElementById("newProdDesc").value,
+            stock: parseInt(document.getElementById("newProdStock").value),
+            categoryId: parseInt(document.getElementById("newProdCatId").value)
+        };
+        try {
+            await req("Products", "POST", body);
+            alert("Ürün eklendi");
+            loadProducts();
+        } catch(e) { alert(e); }
+    }
+
+    async function deleteProduct(id) {
+        if(!confirm("Silinecek?")) return;
+        try { await req(`Products/${id}`, "DELETE"); loadProducts(); }
+        catch(e) { alert(e); }
+    }
+
 </script>
+</body>
+</html>
